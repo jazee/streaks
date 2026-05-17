@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>Streaks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Mono:wght@300;400;500&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0f0f5;
+    --muted: rgba(240,240,245,0.35);
+    --yoga: #c8f566;
+    --steps: #66d9f5;
+    --meditation: #c966f5;
+    --diet: #f5a666;
+    --danger: #f56666;
+    --radius: 20px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Bricolage Grotesque', sans-serif;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 24px 24px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .header-left h1 {
+    font-family: 'Dela Gothic One', sans-serif;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .header-left .date-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .score-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .score-badge .score-num {
+    font-family: 'Dela Gothic One', sans-serif;
+    font-size: 22px;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--yoga), var(--steps));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .score-badge .score-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── WEEK STRIP ── */
+  .week-strip {
+    padding: 20px 24px 0;
+    display: flex;
+    gap: 6px;
+  }
+
+  .day-dot {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .day-dot .day-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .day-dot .dot-ring {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.2s;
+    overflow: hidden;
+  }
+
+  .day-dot.today .dot-ring {
+    border-color: var(--text);
+  }
+
+  .day-dot .fill-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, var(--yoga), var(--steps));
+    transition: height 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    height: 0%;
+  }
+
+  .day-dot .day-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+
+  .day-dot.today .day-num { color: var(--text); }
+  .day-dot.filled .day-num { color: var(--bg); }
+
+  /* ── MAIN SCROLL ── */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  main::-webkit-scrollbar { display: none; }
+
+  /* ── HABIT CARD ── */
+  .habit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: visible;
+    transition: transform 0.15s, border-color 0.3s;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .habit-card:active { transform: scale(0.98); }
+
+  .habit-card.done {
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .habit-card .card-glow {
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.5s;
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .habit-card.done .card-glow { opacity: 0.18; }
+
+  .habit-card[data-habit="yoga"] .card-glow { background: var(--yoga); }
+  .habit-card[data-habit="steps"] .card-glow { background: var(--steps); }
+  .habit-card[data-habit="meditation"] .card-glow { background: var(--meditation); }
+  .habit-card[data-habit="diet"] .card-glow { background: var(--diet); }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .card-icon-name { display: flex; align-items: center; gap: 12px; }
+
+  .card-icon {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .habit-card[data-habit="yoga"] .card-icon { background: rgba(200,245,102,0.12); }
+  .habit-card[data-habit="steps"] .card-icon { background: rgba(102,217,245,0.12); }
+  .habit-card[data-habit="meditation"] .card-icon { background: rgba(201,102,245,0.12); }
+  .habit-card[data-habit="diet"] .card-icon { background: rgba(245,166,102,0.12); }
+
+  .card-name {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .card-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+  }
+
+  .streak-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .streak-pill .streak-num {
+    font-family: 'Dela Gothic One', sans-serif;
+    font-size: 18px;
+    line-height: 1;
+    transition: color 0.3s;
+  }
+
+  .habit-card[data-habit="yoga"].done .streak-pill .streak-num { color: var(--yoga); }
+  .habit-card[data-habit="steps"].done .streak-pill .streak-num { color: var(--steps); }
+  .habit-card[data-habit="meditation"].done .streak-pill .streak-num { color: var(--meditation); }
+  .habit-card[data-habit="diet"].done .streak-pill .streak-num { color: var(--diet); }
+
+  .streak-pill .streak-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-area { margin-bottom: 14px; }
+
+  .progress-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    width: 0%;
+  }
+
+  .habit-card[data-habit="yoga"] .progress-fill { background: var(--yoga); }
+  .habit-card[data-habit="steps"] .progress-fill { background: var(--steps); }
+  .habit-card[data-habit="meditation"] .progress-fill { background: var(--meditation); }
+  .habit-card[data-habit="diet"] .progress-fill { background: var(--diet); }
+
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── STEP INPUT ── */
+  .step-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .step-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .step-input:focus { border-color: var(--steps); }
+  .step-input::placeholder { color: var(--muted); }
+
+  .step-btn {
+    background: var(--steps);
+    color: var(--bg);
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .step-btn:active { opacity: 0.7; }
+
+  /* ── CHECK INDICATOR ── */
+  .check-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .check-circle {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    flex-shrink: 0;
+  }
+
+  .habit-card.done .check-circle {
+    background: var(--yoga);
+    border-color: transparent;
+    transform: scale(1.1);
+  }
+  .habit-card[data-habit="steps"].done .check-circle { background: var(--steps); }
+  .habit-card[data-habit="meditation"].done .check-circle { background: var(--meditation); }
+  .habit-card[data-habit="diet"].done .check-circle { background: var(--diet); }
+
+  .check-circle svg {
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.25s 0.05s;
+  }
+
+  .habit-card.done .check-circle svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .check-text {
+    font-size: 13px;
+    color: var(--muted);
+    transition: color 0.3s;
+    font-weight: 400;
+  }
+
+  .habit-card.done .check-text { color: var(--text); font-weight: 500; }
+
+  /* ── MONTHLY MINI HEATMAP ── */
+  .mini-heatmap {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .heat-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: var(--surface2);
+    transition: all 0.2s;
+  }
+
+  /* ── BOTTOM NAV ── */
+  nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border-top: 1px solid var(--border);
+    padding: 12px 24px;
+    padding-bottom: calc(12px + var(--safe-bottom));
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 12px;
+    transition: all 0.2s;
+    color: var(--muted);
+  }
+
+  .nav-btn.active { color: var(--text); }
+  .nav-btn .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-btn .nav-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── HISTORY VIEW ── */
+  #view-history { display: none; }
+
+  .history-section { margin-bottom: 24px; }
+
+  .history-section h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .history-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .hg-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  .hg-cell {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    background: var(--surface2);
+    position: relative;
+    cursor: default;
+    transition: transform 0.15s;
+  }
+
+  .hg-cell.active-yoga { background: rgba(200,245,102,0.7); }
+  .hg-cell.active-steps { background: rgba(102,217,245,0.7); }
+  .hg-cell.active-meditation { background: rgba(201,102,245,0.7); }
+  .hg-cell.active-diet { background: rgba(245,166,102,0.7); }
+
+  /* ── STATS VIEW ── */
+  #view-stats { display: none; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .stat-tile .st-value {
+    font-family: 'Dela Gothic One', sans-serif;
+    font-size: 28px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-tile .st-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .stat-tile.full { grid-column: span 2; }
+
+  /* ── SETTINGS VIEW ── */
+  #view-settings { display: none; }
+
+  .settings-group { margin-bottom: 24px; }
+
+  .settings-group h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .setting-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .setting-label {
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  .setting-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .target-input {
+    width: 80px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    text-align: right;
+    outline: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+
+  .target-input:focus { border-color: var(--steps); }
+
+  .danger-btn {
+    width: 100%;
+    background: rgba(245,102,102,0.08);
+    border: 1px solid rgba(245,102,102,0.2);
+    border-radius: 14px;
+    padding: 14px;
+    color: var(--danger);
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .danger-btn:active { opacity: 0.7; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 10px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── CONFETTI ── */
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    top: -10px;
+    border-radius: 2px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 999;
+    animation: confettiFall 1.2s ease-out forwards;
+  }
+
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.5); }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .habit-card { animation: slideUp 0.35s ease both; }
+  .habit-card:nth-child(1) { animation-delay: 0.05s; }
+  .habit-card:nth-child(2) { animation-delay: 0.1s; }
+  .habit-card:nth-child(3) { animation-delay: 0.15s; }
+  .habit-card:nth-child(4) { animation-delay: 0.2s; }
+
+  .view { animation: slideUp 0.25s ease both; }
+
+  /* ── FIRE EMOJI ANIMATION ── */
+  @keyframes fireWiggle {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+
+  .fire-anim { display: inline-block; animation: fireWiggle 0.5s ease infinite; }
+
+  /* ── NO WRAP ── */
+  .streak-pill { white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Streaks</h1>
+    <div class="date-label" id="header-date"></div>
+  </div>
+  <div class="score-badge">
+    <div class="score-num" id="score-num">0</div>
+    <div class="score-label">Today</div>
+  </div>
+</header>
+
+<div class="week-strip" id="week-strip"></div>
+
+<!-- TODAY VIEW -->
+<main id="view-today" class="view">
+  <!-- Yoga -->
+  <div class="habit-card" data-habit="yoga" onclick="toggleHabit('yoga')">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon-name">
+        <div class="card-icon">🧘</div>
+        <div>
+          <div class="card-name">Yoga</div>
+          <div class="card-sub" id="yoga-sub">Tap to log today</div>
+        </div>
+      </div>
+      <div class="streak-pill">
+        <span class="streak-num" id="yoga-streak">0</span>
+        <span class="streak-label">day streak</span>
+      </div>
+    </div>
+    <div class="check-indicator">
+      <div class="check-circle">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6L5 9L10 3" stroke="#0a0a0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="check-text" id="yoga-check-text">Not done today</span>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="habit-card" data-habit="steps" onclick="toggleHabit('steps')">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon-name">
+        <div class="card-icon">👟</div>
+        <div>
+          <div class="card-name">10K Steps</div>
+          <div class="card-sub" id="steps-sub">Tap to log today</div>
+        </div>
+      </div>
+      <div class="streak-pill">
+        <span class="streak-num" id="steps-streak">0</span>
+        <span class="streak-label">day streak</span>
+      </div>
+    </div>
+    <div class="check-indicator">
+      <div class="check-circle">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6L5 9L10 3" stroke="#0a0a0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="check-text" id="steps-check-text">Not done today</span>
+    </div>
+  </div>
+
+  <!-- Meditation -->
+  <div class="habit-card" data-habit="meditation" onclick="toggleHabit('meditation')">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon-name">
+        <div class="card-icon">🌿</div>
+        <div>
+          <div class="card-name">Meditation</div>
+          <div class="card-sub" id="meditation-sub">Tap to log today</div>
+        </div>
+      </div>
+      <div class="streak-pill">
+        <span class="streak-num" id="meditation-streak">0</span>
+        <span class="streak-label">day streak</span>
+      </div>
+    </div>
+    <div class="check-indicator">
+      <div class="check-circle">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6L5 9L10 3" stroke="#0a0a0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="check-text" id="meditation-check-text">Not done today</span>
+    </div>
+  </div>
+
+  <!-- Diet -->
+  <div class="habit-card" data-habit="diet" onclick="toggleHabit('diet')">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon-name">
+        <div class="card-icon">🥗</div>
+        <div>
+          <div class="card-name">Clean Diet</div>
+          <div class="card-sub" id="diet-sub">Tap to log today</div>
+        </div>
+      </div>
+      <div class="streak-pill">
+        <span class="streak-num" id="diet-streak">0</span>
+        <span class="streak-label">day streak</span>
+      </div>
+    </div>
+    <div class="check-indicator">
+      <div class="check-circle">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6L5 9L10 3" stroke="#0a0a0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="check-text" id="diet-check-text">Not logged today</span>
+    </div>
+  </div>
+</main>
+
+<!-- HISTORY VIEW -->
+<main id="view-history" class="view" style="display:none; padding-top:20px; padding-bottom:100px;">
+  <div class="history-section">
+    <h3>Last 28 Days — Yoga</h3>
+    <div class="history-grid" id="hist-yoga"></div>
+  </div>
+  <div class="history-section">
+    <h3>Last 28 Days — Steps</h3>
+    <div class="history-grid" id="hist-steps"></div>
+  </div>
+  <div class="history-section">
+    <h3>Last 28 Days — Meditation</h3>
+    <div class="history-grid" id="hist-meditation"></div>
+  </div>
+  <div class="history-section">
+    <h3>Last 28 Days — Diet</h3>
+    <div class="history-grid" id="hist-diet"></div>
+  </div>
+</main>
+
+<!-- STATS VIEW -->
+<main id="view-stats" class="view" style="display:none; padding-top:20px; padding-bottom:100px;">
+  <div class="stat-row">
+    <div class="stat-tile">
+      <div class="st-value" style="color:var(--yoga)" id="stat-yoga-streak">0</div>
+      <div class="st-label">Yoga Streak</div>
+    </div>
+    <div class="stat-tile">
+      <div class="st-value" style="color:var(--steps)" id="stat-steps-streak">0</div>
+      <div class="st-label">Steps Streak</div>
+    </div>
+    <div class="stat-tile">
+      <div class="st-value" style="color:var(--meditation)" id="stat-med-streak">0</div>
+      <div class="st-label">Meditation</div>
+    </div>
+    <div class="stat-tile">
+      <div class="st-value" style="color:var(--diet)" id="stat-diet-streak">0</div>
+      <div class="st-label">Diet Streak</div>
+    </div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-tile">
+      <div class="st-value" id="stat-total-days">0</div>
+      <div class="st-label">Days Tracked</div>
+    </div>
+    <div class="stat-tile">
+      <div class="st-value" id="stat-perfect-days">0</div>
+      <div class="st-label">Perfect Days</div>
+    </div>
+    <div class="stat-tile full">
+      <div class="st-value" id="stat-best-combo">—</div>
+      <div class="st-label">Best Combined Streak</div>
+    </div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-tile full">
+      <div class="st-value" id="stat-yoga-total">0</div>
+      <div class="st-label">Total Yoga Sessions</div>
+    </div>
+    <div class="stat-tile full">
+      <div class="st-value" id="stat-steps-avg">0</div>
+      <div class="st-label">Total Steps Days</div>
+    </div>
+  </div>
+</main>
+
+<!-- SETTINGS VIEW -->
+<main id="view-settings" class="view" style="display:none; padding-top:20px; padding-bottom:100px;">
+  <div class="settings-group">
+    <h3>Targets</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Daily Steps Goal</div>
+        <div class="setting-sub">Default: 10,000</div>
+      </div>
+      <input class="target-input" id="steps-goal-input" type="number" value="10000" inputmode="numeric">
+    </div>
+  </div>
+  <div class="settings-group">
+    <h3>Data</h3>
+    <button class="danger-btn" onclick="confirmReset()">Reset All Data</button>
+  </div>
+  <div class="settings-group">
+    <h3>About</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Version</div>
+        <div class="setting-sub">Streaks v1.0</div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">1.0.0</span>
+    </div>
+  </div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav>
+  <button class="nav-btn active" id="nav-today" onclick="switchView('today')">
+    <span class="nav-icon">⬛</span>
+    <span class="nav-label">Today</span>
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="switchView('history')">
+    <span class="nav-icon">◫</span>
+    <span class="nav-label">History</span>
+  </button>
+  <button class="nav-btn" id="nav-stats" onclick="switchView('stats')">
+    <span class="nav-icon">◈</span>
+    <span class="nav-label">Stats</span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="switchView('settings')">
+    <span class="nav-icon">◉</span>
+    <span class="nav-label">Settings</span>
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const HABITS = ['yoga','steps','meditation','diet'];
+const COLORS = { yoga:'#c8f566', steps:'#66d9f5', meditation:'#c966f5', diet:'#f5a666' };
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function loadData() {
+  try {
+    return JSON.parse(localStorage.getItem('streaks_v2') || '{}');
+  } catch { return {}; }
+}
+
+function saveData(d) {
+  localStorage.setItem('streaks_v2', JSON.stringify(d));
+}
+
+function getSettings() {
+  try {
+    return JSON.parse(localStorage.getItem('streaks_settings') || '{"stepsGoal":10000}');
+  } catch { return {stepsGoal:10000}; }
+}
+
+function saveSettings(s) {
+  localStorage.setItem('streaks_settings', JSON.stringify(s));
+}
+
+function calcStreak(data, habit) {
+  const today = new Date();
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const done = !!(data[key] && data[key][habit]);
+    if (done) {
+      streak++;
+    } else if (i === 0) {
+      continue; // today not done yet, check yesterday
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const data = loadData();
+  const settings = getSettings();
+  const today = todayKey();
+  const entry = data[today] || {};
+  const stepsGoal = settings.stepsGoal || 10000;
+
+  // Update header date
+  const now = new Date();
+  const opts = { weekday:'long', month:'long', day:'numeric' };
+  document.getElementById('header-date').textContent = now.toLocaleDateString('en-US', opts).toUpperCase();
+
+  // Score
+  let score = 0;
+  if (entry.yoga) score++;
+  if ((entry.steps||0) >= stepsGoal) score++;
+  if (entry.meditation) score++;
+  if (entry.diet) score++;
+  document.getElementById('score-num').textContent = `${score}/4`;
+
+  // Habit cards
+  HABITS.forEach(h => {
+    const card = document.querySelector(`[data-habit="${h}"]`);
+    const streak = calcStreak(data, h);
+    document.getElementById(`${h}-streak`).textContent = streak;
+
+    const done = !!entry[h];
+    const subDone = { yoga:'Tap to undo', steps:'Tap to undo', meditation:'Tap to undo', diet:'Tap to undo' };
+    const subNot  = { yoga:'Tap to log today', steps:'Tap to log today', meditation:'Tap to log today', diet:'Tap to log today' };
+    const chkDone = { yoga:'Done today', steps:'Done today', meditation:'Done today', diet:'Logged today' };
+    const chkNot  = { yoga:'Not done today', steps:'Not done today', meditation:'Not done today', diet:'Not logged today' };
+    document.getElementById(`${h}-sub`).textContent = done ? subDone[h] : subNot[h];
+    document.getElementById(`${h}-check-text`).textContent = done ? chkDone[h] : chkNot[h];
+
+    if (done) card.classList.add('done');
+    else card.classList.remove('done');
+  });
+
+  // Week strip
+  renderWeekStrip(data);
+
+  // Settings
+  document.getElementById('steps-goal-input').value = stepsGoal;
+}
+
+function renderWeekStrip(data) {
+  const strip = document.getElementById('week-strip');
+  strip.innerHTML = '';
+  const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const entry = data[key] || {};
+    let done = 0;
+    if (entry.yoga) done++;
+    if (entry.steps) done++;
+    if (entry.meditation) done++;
+    if (entry.diet) done++;
+    const pct = done/4*100;
+    const isToday = i === 0;
+    const div = document.createElement('div');
+    div.className = 'day-dot' + (isToday ? ' today' : '') + (pct === 100 ? ' filled' : '');
+    div.innerHTML = `
+      <div class="dot-ring">
+        <div class="fill-bar" style="height:${pct}%"></div>
+        <span class="day-num">${d.getDate()}</span>
+      </div>
+      <span class="day-name">${days[d.getDay()]}</span>
+    `;
+    strip.appendChild(div);
+  }
+}
+
+
+
+function renderHistoryView(data) {
+  HABITS.forEach(habit => {
+    const el = document.getElementById(`hist-${habit}`);
+    if (!el) return;
+    el.innerHTML = '';
+    const today = new Date();
+    const color = COLORS[habit];
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const entry = data[key] || {};
+      const done = !!entry[habit];
+      const cell = document.createElement('div');
+      cell.className = 'hg-cell' + (done ? ` active-${habit}` : '');
+      el.appendChild(cell);
+    }
+  });
+}
+
+function renderStats(data) {
+  HABITS.forEach(h => {
+    const streak = calcStreak(data, h);
+    const ids = { yoga:'stat-yoga-streak', steps:'stat-steps-streak', meditation:'stat-med-streak', diet:'stat-diet-streak' };
+    const el = document.getElementById(ids[h]);
+    if (el) el.textContent = streak === 0 ? '0' : (streak >= 7 ? '🔥' : '') + streak;
+  });
+
+  const allKeys = Object.keys(data).sort();
+  document.getElementById('stat-total-days').textContent = allKeys.length;
+
+  let perfect = 0;
+  allKeys.forEach(k => {
+    const e = data[k] || {};
+    if (e.yoga && e.meditation && e.diet && e.steps) perfect++;
+  });
+  document.getElementById('stat-perfect-days').textContent = perfect;
+
+  let best = 0, cur = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const e = data[key] || {};
+    if (e.yoga && e.meditation && e.diet && e.steps) { cur++; best = Math.max(best, cur); }
+    else cur = 0;
+  }
+  document.getElementById('stat-best-combo').textContent = best + ' days';
+
+  let yogaTotal = 0;
+  allKeys.forEach(k => { if (data[k]?.yoga) yogaTotal++; });
+  document.getElementById('stat-yoga-total').textContent = yogaTotal;
+
+  let stepsTotal = 0;
+  allKeys.forEach(k => { if (data[k]?.steps) stepsTotal++; });
+  document.getElementById('stat-steps-avg').textContent = stepsTotal + ' days';
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+function toggleHabit(habit) {
+  const data = loadData();
+  const today = todayKey();
+  if (!data[today]) data[today] = {};
+  const wasDone = !!data[today][habit];
+  data[today][habit] = !wasDone;
+  saveData(data);
+  render();
+  if (!wasDone) {
+    showToast(`${habitName(habit)} logged ✓`);
+    spawnConfetti(COLORS[habit]);
+    checkAllDone(data);
+  } else {
+    showToast(`${habitName(habit)} removed`);
+  }
+}
+
+
+
+
+
+function habitName(h) {
+  return { yoga:'Yoga', steps:'Steps', meditation:'Meditation', diet:'Diet' }[h];
+}
+
+function checkAllDone(data) {
+  const today = todayKey();
+  const e = data[today] || {};
+  if (e.yoga && e.steps && e.meditation && e.diet) {
+    setTimeout(() => { showToast('Perfect day! 🔥'); spawnConfetti('#ffffff'); }, 600);
+  }
+}
+
+// ─── STEPS GOAL SETTING ───────────────────────────────────────────────────────
+document.getElementById('steps-goal-input').addEventListener('change', function() {
+  const val = parseInt(this.value);
+  if (isNaN(val) || val < 100) { this.value = 10000; return; }
+  const s = getSettings();
+  s.stepsGoal = val;
+  saveSettings(s);
+  render();
+  showToast(`Step goal set to ${val.toLocaleString()}`);
+});
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+let currentView = 'today';
+
+function switchView(view) {
+  document.getElementById(`view-${currentView}`).style.display = 'none';
+  document.getElementById(`nav-${currentView}`).classList.remove('active');
+  currentView = view;
+  document.getElementById(`view-${view}`).style.display = 'flex';
+  document.getElementById(`view-${view}`).style.flexDirection = 'column';
+  document.getElementById(`nav-${view}`).classList.add('active');
+
+  const data = loadData();
+  if (view === 'history') renderHistoryView(data);
+  if (view === 'stats') renderStats(data);
+}
+
+// ─── RESET ───────────────────────────────────────────────────────────────────
+function confirmReset() {
+  if (confirm('This will permanently delete all your streak data. Are you sure?')) {
+    localStorage.removeItem('streaks_v2');
+    render();
+    showToast('All data reset');
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── CONFETTI ────────────────────────────────────────────────────────────────
+function spawnConfetti(color) {
+  for (let i = 0; i < 18; i++) {
+    setTimeout(() => {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.cssText = `
+        left: ${20 + Math.random()*60}%;
+        background: ${color};
+        animation-delay: ${Math.random()*0.3}s;
+        animation-duration: ${0.8 + Math.random()*0.6}s;
+        transform: rotate(${Math.random()*360}deg);
+        width: ${6+Math.random()*6}px;
+        height: ${6+Math.random()*6}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      `;
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 1400);
+    }, i * 30);
+  }
+}
+
+
+
+// ─── MIDNIGHT RESET CHECK ────────────────────────────────────────────────────
+function checkMidnightReset() {
+  const lastCheck = localStorage.getItem('streaks_last_check');
+  const today = todayKey();
+  if (lastCheck !== today) {
+    localStorage.setItem('streaks_last_check', today);
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+checkMidnightReset();
+render();
+
+// Auto-refresh at midnight
+setInterval(() => {
+  const prevToday = todayKey();
+  setTimeout(() => {
+    if (todayKey() !== prevToday) {
+      checkMidnightReset();
+      render();
+    }
+  }, 1000);
+}, 60000);
+</script>
+</body>
+</html>
