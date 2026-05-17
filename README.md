@@ -1,1 +1,1 @@
-# strreaks
+# streaks
